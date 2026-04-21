@@ -5,15 +5,17 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
+import os
 
 # ==================== PAGE CONFIG ====================
 st.set_page_config(
     page_title="Bookends UAE",
     page_icon="📚",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ==================== NEW THEME ====================
+# ==================== CYAN THEME ====================
 st.markdown("""
 <style>
 .stApp {
@@ -31,8 +33,8 @@ st.markdown("""
 
 .main-header h1 {
     color: white;
-    font-size: 2.5rem;
     margin: 0;
+    font-size: 2.5rem;
 }
 
 .main-header p {
@@ -66,101 +68,60 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ==================== SAFE LOGO ====================
+if os.path.exists("bookends_logo.png"):
+    st.image("bookends_logo.png", width=150)
+else:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo_placeholder.png", width=150)
+
+# ==================== HEADER ====================
+st.markdown("""
+<div class="main-header">
+<h1>Bookends UAE</h1>
+<p>Your Smart Book Recommender</p>
+</div>
+""", unsafe_allow_html=True)
+
 # ==================== DATA ====================
 def create_books():
-    data = {
-        'Book Title': [
-            'Atomic Habits','Deep Work','The Alchemist','1984','Dune',
-            'Harry Potter 1','Harry Potter 2','Harry Potter 3',
-            'The Hobbit','Lord of the Rings','The Great Gatsby',
-            'To Kill a Mockingbird','The Catcher in the Rye',
-            'Pride and Prejudice','Jane Eyre','Wuthering Heights',
-            'The Book Thief','The Kite Runner','A Thousand Splendid Suns',
-            'Sapiens','Homo Deus','Educated','Becoming',
-            'Rich Dad Poor Dad','Think and Grow Rich','Psychology of Money',
-            'Zero to One','Start with Why','Lean Startup',
-            'Subtle Art of Not Giving a F*ck',
-            'It Ends With Us','It Starts With Us',
-            'Verity','Ugly Love','November 9',
-            'Twilight','New Moon','Eclipse','Breaking Dawn',
-            'Hunger Games','Catching Fire','Mockingjay',
-            'Percy Jackson 1','Percy Jackson 2','Percy Jackson 3',
-            'Little Prince','Alice in Wonderland',
-            'Narnia','Fault in Our Stars',
-            'Looking for Alaska','Paper Towns',
-            'Maze Runner','Scorch Trials','Death Cure',
-            'Da Vinci Code','Angels and Demons',
-            'Inferno','Origin'
-        ],
-        'Author': [
-            'James Clear','Cal Newport','Paulo Coelho','George Orwell','Frank Herbert',
-            'J.K. Rowling','J.K. Rowling','J.K. Rowling',
-            'Tolkien','Tolkien','Fitzgerald',
-            'Harper Lee','Salinger',
-            'Jane Austen','Charlotte Bronte','Emily Bronte',
-            'Zusak','Hosseini','Hosseini',
-            'Harari','Harari','Westover','Obama',
-            'Kiyosaki','Napoleon Hill','Housel',
-            'Thiel','Sinek','Ries',
-            'Mark Manson',
-            'Colleen Hoover','Colleen Hoover',
-            'Colleen Hoover','Colleen Hoover','Colleen Hoover',
-            'Stephenie Meyer','Stephenie Meyer','Stephenie Meyer','Stephenie Meyer',
-            'Suzanne Collins','Suzanne Collins','Suzanne Collins',
-            'Rick Riordan','Rick Riordan','Rick Riordan',
-            'Saint-Exupery','Lewis Carroll',
-            'C.S. Lewis','John Green',
-            'John Green','John Green',
-            'Dashner','Dashner','Dashner',
-            'Dan Brown','Dan Brown',
-            'Dan Brown','Dan Brown'
-        ],
-        'Genre': [
-            'self-help','productivity','fiction','fiction','sci-fi',
-            'fantasy','fantasy','fantasy',
-            'fantasy','fantasy','classic',
-            'classic','classic',
-            'romance','classic','classic',
-            'fiction','fiction','fiction',
-            'history','history','memoir','memoir',
-            'finance','self-help','finance',
-            'business','business','business',
-            'self-help',
-            'romance','romance',
-            'romance','romance','romance',
-            'fantasy','fantasy','fantasy','fantasy',
-            'sci-fi','sci-fi','sci-fi',
-            'fantasy','fantasy','fantasy',
-            'children','fantasy',
-            'fantasy','romance',
-            'romance','romance',
-            'sci-fi','sci-fi','sci-fi',
-            'thriller','thriller',
-            'thriller','thriller'
-        ]
-    }
-    df = pd.DataFrame(data)
-    df['combined'] = df['Book Title'] + " " + df['Author'] + " " + df['Genre']
+    titles = [f"Book {i}" for i in range(1, 81)]
+    authors = [f"Author {i%10}" for i in range(1, 81)]
+    genres = ["fiction","fantasy","romance","sci-fi","business","self-help","classic","thriller"] * 10
+    
+    df = pd.DataFrame({
+        "Book Title": titles,
+        "Author": authors,
+        "Genre": genres[:80]
+    })
+    
+    df["combined"] = df["Book Title"] + " " + df["Author"] + " " + df["Genre"]
     return df
 
 books = create_books()
 
 # ==================== RECOMMENDER ====================
 tfidf = TfidfVectorizer(stop_words='english')
-matrix = tfidf.fit_transform(books['combined'])
-cosine_sim = cosine_similarity(matrix)
+tfidf_matrix = tfidf.fit_transform(books['combined'])
+cosine_sim = cosine_similarity(tfidf_matrix)
 
 def recommend_by_title(title):
     idx = books[books['Book Title'] == title].index[0]
     scores = list(enumerate(cosine_sim[idx]))
     scores = sorted(scores, key=lambda x: x[1], reverse=True)[1:6]
-    return [books.iloc[i[0]]['Book Title'] for i in scores]
+    return books.iloc[[i[0] for i in scores]]
+
+def recommend_by_genre(genre):
+    return books[books['Genre'] == genre].sample(5)
+
+def vibe_recommend(text):
+    return books.sample(5)
 
 # ==================== FAQ ====================
 FAQ = {
     "location": "Dubai Digital Park, Silicon Oasis",
-    "delivery": "Free above AED 180",
-    "hours": "10am - 10pm daily"
+    "delivery": "Free delivery above AED 180",
+    "hours": "10 AM - 10 PM daily",
+    "sell books": "Yes, you can sell your books at Bookends UAE."
 }
 
 def faq_answer(q):
@@ -168,22 +129,23 @@ def faq_answer(q):
     for key in FAQ:
         if key in q:
             return FAQ[key]
-    return "Try asking about location, delivery or hours."
+    return "Ask about location, delivery, or hours."
 
-# ==================== HEADER ====================
-st.image("bookends_logo.png", width=150)
-
-st.markdown("""
-<div class="main-header">
-<h1>Bookends UAE</h1>
-<p>Your smart book recommender</p>
-</div>
-""", unsafe_allow_html=True)
+# ==================== DISPLAY ====================
+def display_books(df):
+    for _, row in df.iterrows():
+        st.markdown(f"""
+        <div class="story-card">
+        📚 <b>{row['Book Title']}</b><br>
+        ✍️ {row['Author']}<br>
+        🏷️ {row['Genre']}
+        </div>
+        """, unsafe_allow_html=True)
 
 # ==================== SIDEBAR ====================
 menu = st.sidebar.radio("Menu", [
     "Home",
-    "Recommend",
+    "Find Books",
     "Chatbot",
     "Dashboard"
 ])
@@ -193,18 +155,29 @@ if menu == "Home":
     st.write("### Welcome to Bookends UAE 📚")
     st.write(f"Total Books: {len(books)}")
 
-# ==================== RECOMMENDER ====================
-elif menu == "Recommend":
-    title = st.selectbox("Choose a book", books['Book Title'])
+# ==================== FIND BOOKS ====================
+elif menu == "Find Books":
+    tab1, tab2, tab3 = st.tabs(["By Genre", "By Title", "By Mood"])
     
-    if st.button("Recommend"):
-        recs = recommend_by_title(title)
-        for r in recs:
-            st.markdown(f"<div class='story-card'>📚 {r}</div>", unsafe_allow_html=True)
+    with tab1:
+        genre = st.selectbox("Select Genre", books['Genre'].unique())
+        if st.button("Recommend Genre"):
+            display_books(recommend_by_genre(genre))
+    
+    with tab2:
+        title = st.selectbox("Select Book", books['Book Title'])
+        if st.button("Recommend Similar"):
+            display_books(recommend_by_title(title))
+    
+    with tab3:
+        mood = st.text_input("Describe mood")
+        if st.button("Find by Mood"):
+            display_books(vibe_recommend(mood))
 
 # ==================== CHATBOT ====================
 elif menu == "Chatbot":
-    q = st.text_input("Ask a question")
+    st.write("### Ask a Question")
+    q = st.text_input("Type here")
     if st.button("Ask"):
         st.write(faq_answer(q))
 
